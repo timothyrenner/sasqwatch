@@ -1,0 +1,20 @@
+name: sasqwatch
+channels:
+- defaults
+dependencies:
+- python=3.6
+- pip:
+  - click
+  - ipython
+  - scikit-learn
+  - xgboost
+  - toolz
+  - pandas
+  - svl
+  - loguru
+  - flake8
+  - black
+  - h3
+  - folium
+  - geopandas
+  - shapely
