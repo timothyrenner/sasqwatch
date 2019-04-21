@@ -8,9 +8,6 @@ from h3 import h3
 from shapely.geometry import mapping, shape
 
 
-NON_CONUS = {"VI", "AK", "HI", "PR", "GU", "MP", "AS"}
-
-
 @click.command()
 @click.argument("data_file", type=click.File("r"))
 @click.option(
