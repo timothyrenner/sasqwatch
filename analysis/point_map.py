@@ -5,11 +5,9 @@ import pandas as pd
 
 @click.command()
 @click.argument("data_file", type=click.File("r"))
-@click.option("--latitude-col", type=str, default="latitude")
-@click.option("--longitude-col", type=str, default="longitude")
 @click.option("--output-file", type=str, default="sasquatch_point.html")
-def main(data_file, latitude, longitude, output_file):
-    data = pd.read_csv(data_file).query("latitude.isnull()")
+def main(data_file, output_file):
+    data = pd.read_csv(data_file).query("~latitude.isnull()")
     map_center = [data["latitude"].mean(), data["longitude"].mean()]
     sasquatch_map = folium.Map(
         location=map_center, zoom_start=5, tiles="cartodbpositron"
