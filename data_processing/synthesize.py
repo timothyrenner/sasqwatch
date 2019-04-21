@@ -35,7 +35,7 @@ def random_location(candidate_hex_addresses, resolution):
 
 @click.command()
 @click.option("--num-samples", type=int, default=5000)
-@click.option("--min-date", type=str, default="1960-01-01")
+@click.option("--min-date", type=str, default="1970-01-01")
 @click.option(
     "--max-date",
     type=str,

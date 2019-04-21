@@ -18,3 +18,4 @@ dependencies:
   - folium
   - geopandas
   - shapely
+  - python-dotenv

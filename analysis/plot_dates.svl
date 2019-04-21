@@ -1,0 +1,4 @@
+LINE not_bigfoot
+    TITLE "Not Bigfoot Sightings by Date"
+    X date BY YEAR LABEL "Date"
+    Y date COUNT LABEL "Number of Not Sightings"
