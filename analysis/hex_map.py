@@ -1,11 +1,11 @@
 import click
-import geopandas as gpd
+import json
 import pandas as pd
 import folium
 import branca
 
 from h3 import h3
-from shapely.geometry import mapping
+from shapely.geometry import mapping, shape
 
 
 NON_CONUS = {"VI", "AK", "HI", "PR", "GU", "MP", "AS"}
@@ -13,7 +13,9 @@ NON_CONUS = {"VI", "AK", "HI", "PR", "GU", "MP", "AS"}
 
 @click.command()
 @click.argument("data_file", type=click.File("r"))
-@click.option("--polygon-file", type=str, default="cb_us_state_2016.shp")
+@click.option(
+    "--polygon-file", type=click.File("r"), default="data/us.geojson"
+)
 @click.option("--resolution", type=int, default=4)
 @click.option("--output-file", type=str, default="sasquatch_hex.html")
 def main(data_file, polygon_file, resolution, output_file):
@@ -26,28 +28,22 @@ def main(data_file, polygon_file, resolution, output_file):
     ]
 
     # Read in the US states polygons.
-    us_states = gpd.read_file(polygon_file).query("STUSPS not in @NON_CONUS")
+    us_states = shape(json.load(polygon_file))
     state_hexes = set()
 
     # Polyfill each state and add it to the big list of h3 indexes.
-    for _, row in us_states.iterrows():
-        # Sometimes they're polygons, sometimes they're multis.
-        if row.geometry.type == "MultiPolygon":
-            geometries = row.geometry
-        else:
-            geometries = [row.geometry]
+    for geometry in us_states:
+        state_hexes |= h3.polyfill(
+            mapping(geometry), resolution, geo_json_conformant=True
+        )
 
-        for geometry in geometries:
-            state_hexes |= h3.polyfill(
-                mapping(geometry), resolution, geo_json_conformant=True
-            )
-
+    all_hexes = state_hexes | set(data.h3_index)
     # Now reindex the counted sightings by hex address and fill the empties
     # with zeros.
     grouped_sightings = (
         data.groupby("h3_index")
         .agg({"number": "count"})
-        .reindex(list(state_hexes), fill_value=0)
+        .reindex(list(all_hexes), fill_value=0)
     )
 
     geo_json = {"type": "FeatureCollection", "features": []}
