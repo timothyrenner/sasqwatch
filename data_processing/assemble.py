@@ -20,6 +20,7 @@ RAW_FEATURES = [
     "visibility",
     "wind_bearing",
     "wind_speed",
+    "sighting",
 ]
 
 
@@ -27,7 +28,10 @@ RAW_FEATURES = [
 @click.argument("sightings", type=click.File("r"))
 @click.argument("not_sightings", type=click.File("r"))
 @click.option(
-    "--output-file", "-o", type=click.File("w"), default="raw_training_set.csv"
+    "--output-file",
+    "-o",
+    type=click.File("w"),
+    default="data/interim/raw_training_data.csv",
 )
 def main(sightings, not_sightings, output_file):
     sightings_df = (

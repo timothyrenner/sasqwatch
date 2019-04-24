@@ -1,0 +1,100 @@
+DATASETS
+    sightings SQL
+        "SELECT * FROM bigfoot WHERE sighting = 1"
+    not_sightings SQL
+        "SELECT * FROM bigfoot WHERE sighting = 0"
+
+CONCAT(
+    PIE bigfoot AXIS sighting
+    
+    (
+        LINE sightings
+            TITLE "Bigfoot Sightings by Year"
+            X date BY YEAR
+            Y date COUNT LABEL "Number of Sightings"
+            FILTER "date >= '1960-01-01'"
+
+        LINE not_sightings
+            TITLE "Not Bigfoot Sightings by Year"
+            X date BY YEAR
+            Y date COUNT LABEL "Number of Sightings"
+            FILTER "date >= '1960-01-01'"
+    )
+)
+
+CONCAT(
+    (
+        HISTOGRAM sightings X temperature_high
+        HISTOGRAM not_sightings X temperature_high
+    )
+    (
+        HISTOGRAM sightings X temperature_low
+        HISTOGRAM not_sightings X temperature_low
+    )
+)
+
+CONCAT(
+    (
+        HISTOGRAM sightings X dew_point
+        HISTOGRAM not_sightings X dew_point
+    )
+    (
+        HISTOGRAM sightings X humidity
+        HISTOGRAM not_sightings X humidity
+    )
+)
+
+CONCAT(
+    (
+        HISTOGRAM sightings X cloud_cover
+        HISTOGRAM not_sightings X cloud_cover
+    )
+    (
+        HISTOGRAM sightings X moon_phase
+        HISTOGRAM not_sightings X moon_phase
+    )
+)
+
+CONCAT(
+    (
+        HISTOGRAM sightings X precip_intensity
+        HISTOGRAM not_sightings X precip_intensity
+    )
+    (
+        HISTOGRAM sightings X precip_probability
+        HISTOGRAM not_sightings X precip_probability
+    )
+)
+
+CONCAT(
+    (
+        BAR sightings X precip_type Y precip_type COUNT LABEL "Number of Sightings"
+        BAR not_sightings X precip_type Y precip_type COUNT LABEL "Number of Sightings"
+    )
+    (
+        HISTOGRAM sightings X pressure
+        HISTOGRAM not_sightings X pressure
+    )
+)
+
+CONCAT(
+    (
+        HISTOGRAM sightings X uv_index
+        HISTOGRAM not_sightings X uv_index
+    )
+    (
+        HISTOGRAM sightings X visibility
+        HISTOGRAM not_sightings X visibility
+    )
+)
+
+CONCAT(
+    (
+        HISTOGRAM sightings X wind_bearing
+        HISTOGRAM not_sightings X wind_bearing
+    )
+    (
+        HISTOGRAM sightings X wind_speed
+        HISTOGRAM not_sightings X wind_speed
+    )
+)
