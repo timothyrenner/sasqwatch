@@ -34,7 +34,7 @@ def random_location(candidate_hex_addresses, resolution):
 
 
 @click.command()
-@click.option("--num-samples", type=int, default=5000)
+@click.option("--num-samples", type=int, default=4000)
 @click.option("--min-date", type=str, default="1990-01-01")
 @click.option(
     "--max-date",
@@ -49,7 +49,7 @@ def random_location(candidate_hex_addresses, resolution):
     "--output-file",
     "-o",
     type=click.File("w"),
-    default="data/synthesized_sightings.csv",
+    default="data/raw/synthesized_not_sightings.csv",
 )
 def main(
     num_samples,
