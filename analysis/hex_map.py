@@ -10,9 +10,7 @@ from shapely.geometry import mapping, shape
 
 @click.command()
 @click.argument("data_file", type=click.File("r"))
-@click.option(
-    "--polygon-file", type=click.File("r"), default="data/us.geojson"
-)
+@click.argument("--polygon-file", type=click.File("r"))
 @click.option("--resolution", type=int, default=4)
 @click.option("--output-file", type=str, default="sasquatch_hex.html")
 def main(data_file, polygon_file, resolution, output_file):
