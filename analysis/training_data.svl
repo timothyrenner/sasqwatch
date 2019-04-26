@@ -1,0 +1,119 @@
+DATASETS
+    sightings SQL "SELECT * FROM bigfoot WHERE sighting=1"
+    not_sightings SQL "SELECT * FROM bigfoot WHERE sighting=0"
+
+PIE bigfoot AXIS sighting
+
+BAR sightings X year Y year COUNT LABEL "Number of Sightings"
+BAR not_sightings X year Y year COUNT LABEL "Number of Not Sightings"
+
+CONCAT(
+    BAR sightings X month Y month COUNT LABEL "Number of Sightings"
+    BAR not_sightings X month Y month COUNT LABEL "Number of Not Sightings"
+)
+
+BAR sightings X dayofmonth Y dayofmonth COUNT LABEL "Number of Sightings"
+BAR not_sightings X dayofmonth Y dayofmonth COUNT LABEL "Number of Not Sightings"
+
+BAR sightings X dayofyear Y dayofyear COUNT LABEL "Number of Sightings"
+BAR not_sightings X dayofyear Y dayofyear COUNT LABEL "Number of Not Sightings"
+
+CONCAT(
+    PIE sightings 
+        AXIS TRANSFORM 
+            "CASE WHEN temperature_high IS NULL 
+             THEN 'no_weather' ELSE 'has_weather' END"
+        LABEL "has weather"
+        TITLE "Sightings: Has Weather"
+    PIE not_sightings
+        AXIS TRANSFORM
+            "CASE WHEN temperature_high IS NULL
+             THEN 'no_weather' ELSE 'has_weather' END"
+        LABEL "has_weather"
+        TITLE "Not Sightings: Has Weather"
+)
+
+CONCAT(
+    BAR sightings
+        TITLE "Sightings: Precipitation Type"
+        X TRANSFORM 
+            "CASE WHEN rain = 1 THEN 'rain' 
+                  WHEN snow = 1 THEN 'snow' 
+                  WHEN unknown = 1 THEN 'unknown' 
+            END" LABEL "precip_type" 
+        Y year COUNT LABEL "Number of Sightings"
+
+    BAR not_sightings 
+        TITLE "Not Sightings: Precipitation Type"
+        X TRANSFORM 
+            "CASE WHEN rain = 1 THEN 'rain' 
+                  WHEN snow = 1 THEN 'snow' 
+                  WHEN unknown = 1 THEN 'unknown' 
+            END" LABEL "precip_type" 
+        Y year COUNT LABEL "Number of Not Sightings"
+)
+
+CONCAT(
+    HISTOGRAM sightings X temperature_high
+    HISTOGRAM not_sightings X temperature_high
+)
+
+CONCAT(
+    HISTOGRAM sightings X temperature_low
+    HISTOGRAM not_sightings X temperature_low
+)
+
+CONCAT(
+    HISTOGRAM sightings X dew_point
+    HISTOGRAM not_sightings X dew_point
+)
+
+CONCAT(
+    HISTOGRAM sightings X humidity
+    HISTOGRAM not_sightings X humidity
+)
+
+CONCAT(
+    HISTOGRAM sightings X cloud_cover
+    HISTOGRAM not_sightings X cloud_cover
+)
+
+CONCAT(
+    HISTOGRAM sightings X moon_phase
+    HISTOGRAM not_sightings X moon_phase
+)
+
+CONCAT(
+    HISTOGRAM sightings X precip_intensity
+    HISTOGRAM not_sightings X precip_intensity
+)
+
+CONCAT(
+    HISTOGRAM sightings X precip_probability
+    HISTOGRAM not_sightings X precip_probability
+)
+
+CONCAT(
+    HISTOGRAM sightings X pressure
+    HISTOGRAM not_sightings X pressure
+)
+
+CONCAT(
+    HISTOGRAM sightings X uv_index
+    HISTOGRAM not_sightings X uv_index
+)
+
+CONCAT(
+    HISTOGRAM sightings X visibility
+    HISTOGRAM not_sightings X visibility
+)
+
+CONCAT(
+    HISTOGRAM sightings X wind_bearing
+    HISTOGRAM not_sightings X wind_bearing
+)
+
+CONCAT(
+    HISTOGRAM sightings X wind_speed
+    HISTOGRAM not_sightings X wind_speed
+)

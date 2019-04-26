@@ -19,3 +19,5 @@ dependencies:
   - geopandas
   - shapely
   - python-dotenv
+  - mlflow
+  - yaspin
