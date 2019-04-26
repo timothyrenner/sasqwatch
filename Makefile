@@ -27,5 +27,8 @@ data/interim/synthesized_not_sightings.csv: data/raw/synthesized_not_sightings.c
 		slamdring --num-tasks 10 | \
 		python data_processing/unpack_weather_results.py --output-file $@
 
-data/interim/raw_training_data.csv: data/raw/bigfoot_sightings.csv data/interim/synthesized_not_sightings.csv
+data/processed/raw_training_data.csv: data/raw/bigfoot_sightings.csv data/interim/synthesized_not_sightings.csv
 	python data_processing/assemble.py $^ --output-file $@
+
+data/processed/training_data.csv: data/processed/raw_training_data.csv
+	python data_processing/features.py $^ --output-file $@

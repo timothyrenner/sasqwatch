@@ -3,9 +3,12 @@ import pandas as pd
 
 
 RAW_FEATURES = [
+    # These four features are transformed into new ones.
     "date",
     "latitude",
     "longitude",
+    "precip_type",
+    # These are passed through.
     "temperature_high",
     "temperature_low",
     "dew_point",
@@ -14,14 +17,16 @@ RAW_FEATURES = [
     "moon_phase",
     "precip_intensity",
     "precip_probability",
-    "precip_type",
     "pressure",
     "uv_index",
     "visibility",
     "wind_bearing",
     "wind_speed",
-    "sighting",
 ]
+
+TARGET = "sighting"
+
+ALL_COLUMNS = RAW_FEATURES + [TARGET]
 
 
 @click.command()
@@ -31,7 +36,7 @@ RAW_FEATURES = [
     "--output-file",
     "-o",
     type=click.File("w"),
-    default="data/interim/raw_training_data.csv",
+    default="data/processed/raw_training_data.csv",
 )
 def main(sightings, not_sightings, output_file):
     sightings_df = (
@@ -46,7 +51,7 @@ def main(sightings, not_sightings, output_file):
     )
 
     pd.concat(
-        [sightings_df[RAW_FEATURES], not_sightings_df[RAW_FEATURES]]
+        [sightings_df[ALL_COLUMNS], not_sightings_df[ALL_COLUMNS]]
     ).to_csv(output_file, index=False)
 
 
