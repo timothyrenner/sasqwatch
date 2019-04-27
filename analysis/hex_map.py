@@ -10,7 +10,7 @@ from shapely.geometry import mapping, shape
 
 @click.command()
 @click.argument("data_file", type=click.File("r"))
-@click.argument("--polygon-file", type=click.File("r"))
+@click.argument("polygon_file", type=click.File("r"))
 @click.option("--resolution", type=int, default=4)
 @click.option("--output-file", type=str, default="sasquatch_hex.html")
 def main(data_file, polygon_file, resolution, output_file):
@@ -37,7 +37,7 @@ def main(data_file, polygon_file, resolution, output_file):
     # with zeros.
     grouped_sightings = (
         data.groupby("h3_index")
-        .agg({"number": "count"})
+        .agg({"date": "count"})
         .reindex(list(all_hexes), fill_value=0)
     )
 
@@ -51,7 +51,7 @@ def main(data_file, polygon_file, resolution, output_file):
                 "geometry": {"type": "Polygon", "coordinates": [hexagon]},
                 "properties": {
                     "hex_address": h3_address,
-                    "count": int(row.number),
+                    "count": int(row.date),
                 },
             }
         )
@@ -59,7 +59,7 @@ def main(data_file, polygon_file, resolution, output_file):
     # Now it's map time.
     map_center = [data["latitude"].mean(), data["longitude"].mean()]
     colormap = branca.colormap.linear.YlOrRd_09.scale(
-        grouped_sightings.number.min(), grouped_sightings.number.max()
+        grouped_sightings.date.min(), grouped_sightings.date.max()
     )
     m = folium.Map(location=map_center, zoom_start=5, tiles="cartodbpositron")
 

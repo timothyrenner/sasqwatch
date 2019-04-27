@@ -34,6 +34,8 @@ data/processed/raw_training_data.csv: data/raw/bigfoot_sightings.csv data/interi
 data/processed/training_data.csv: data/processed/raw_training_data.csv
 	python model/features.py $< --output-file $@
 
+training_data: data/processed/training_data.csv
+
 data/visualizations/sightings_point_map.html: data/raw/bigfoot_sightings.csv
 	python analysis/point_map.py $< --output-file $@
 	open $@
@@ -43,11 +45,11 @@ data/visualizations/not_sightings_point_map.html: data/raw/synthesized_not_sight
 	open $@
 
 data/visualizations/sighting_hex_map.html: data/raw/bigfoot_sightings.csv data/raw/us.geojson
-	python analysis $^ --resolution $(US_RESOLUTION) --output-file $@
+	python analysis/hex_map.py $^ --resolution 4 --output-file $@
 	open $@
 
 data/visualizations/not_sighting_hex_map.html: data/raw/synthesized_not_sightings.csv data/raw/us.geojson
-	python analysis $^ --resolution $(US_RESOLUTION) --output-file $@
+	python analysis/hex_map.py $^ --resolution 4 --output-file $@
 	open $@
 
 data/visualizations/raw_training_data.html: data/processed/raw_training_data.csv
@@ -56,10 +58,10 @@ data/visualizations/raw_training_data.html: data/processed/raw_training_data.csv
 data/visualizations/training_data.html: data/processed/training_data.csv
 	svl analysis/training_data.svl --dataset bigfoot=$< --output-file $@
 
-visualizations:
-	data/visualizations/sightings_point_map.html
-	data/visualizations/not_sightings_point_map.html
-	data/visualizations/sighting_hex_map.html
-	data/visualizations/not_sighting_hex_map.html
-	data/visualizations/raw_training_data.html
+visualizations: \
+	data/visualizations/sightings_point_map.html \
+	data/visualizations/not_sightings_point_map.html \
+	data/visualizations/sighting_hex_map.html \
+	data/visualizations/not_sighting_hex_map.html \
+	data/visualizations/raw_training_data.html \
 	data/visualizations/training_data.html
