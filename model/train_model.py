@@ -17,9 +17,10 @@ from xgboost.sklearn import XGBClassifier
 from time import time
 from loguru import logger
 from yaspin import yaspin
+from toolz import get
 
 from assemble import RAW_FEATURES, TARGET
-from features import feature_pipeline
+from features import feature_pipeline, get_one_hot_precip
 
 
 def log_params(max_depth, learning_rate, n_estimators):
@@ -61,6 +62,33 @@ def log_performance(model, test_x, test_y):
     )
 
 
+def log_feature_importances(model, importance_plot_file):
+    final_features = (
+        ["year", "month", "dayofmonth", "dayofyear"]
+        + list(get_one_hot_precip(model.steps[0][1]))
+        + RAW_FEATURES[4:]
+    )
+    features = {f"f{ii}": feature for ii, feature in enumerate(final_features)}
+    importances = (
+        model.steps[-1][1].get_booster().get_score(importance_type="gain")
+    )
+
+    feature_importances = pd.DataFrame(
+        [
+            {
+                "feature": feature,
+                "importance": get(coded_feature, importances, 0.0),
+            }
+            for coded_feature, feature in features.items()
+        ]
+    ).sort_values("importance", ascending=True).reset_index(drop=True)
+
+    ax = feature_importances.plot(y="importance", x="feature", kind="barh")
+    ax.get_figure().subplots_adjust(left=0.25)
+    ax.get_figure().savefig(importance_plot_file)
+    mlflow.log_artifact(importance_plot_file)
+
+
 @click.command()
 @click.argument("raw_training_data", type=click.File("r"))
 @click.option("--model-file", "-m", type=str, default="model/model.pkl")
@@ -70,6 +98,11 @@ def log_performance(model, test_x, test_y):
     type=click.File("w"),
     default="data/processed/predictions.csv",
 )
+@click.option(
+    "--importance-plot-file",
+    type=str,
+    default="data/visualizations/feature_importances.png",
+)
 @click.option("--max-depth", type=int, default=3)
 @click.option("--learning-rate", type=float, default=0.15)
 @click.option("--n-estimators", type=int, default=500)
@@ -77,6 +110,7 @@ def main(
     raw_training_data,
     model_file,
     prediction_file,
+    importance_plot_file,
     max_depth,
     learning_rate,
     n_estimators,
@@ -121,6 +155,10 @@ def main(
     prediction_probas = pipeline.predict_proba(training_data[RAW_FEATURES])
     training_data.loc[:, "sighting_predicted"] = predictions
     training_data.loc[:, "sighting_pred_proba"] = prediction_probas[:, 1]
+
+    # Log the feature importances.
+    logger.info(f"Saving feature importances to {importance_plot_file}.")
+    log_feature_importances(pipeline, importance_plot_file)
 
     # Save the model pickle file.
     logger.info(f"Saving pickled pipeline to {model_file}.")
