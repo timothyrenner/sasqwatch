@@ -64,7 +64,7 @@ def log_performance(model, test_x, test_y):
 
 def log_feature_importances(model, importance_plot_file):
     final_features = (
-        ["year", "month", "dayofmonth", "dayofyear"]
+        ["month", "dayofmonth", "dayofyear"]
         + list(get_one_hot_precip(model.steps[0][1]))
         + RAW_FEATURES[4:]
     )

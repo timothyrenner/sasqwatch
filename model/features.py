@@ -12,7 +12,6 @@ from assemble import RAW_FEATURES, TARGET
 def featurize_time(frame, date_col="date"):
     frame.loc[:, date_col] = pd.to_datetime(frame[date_col])
     return frame.assign(
-        year=frame[date_col].dt.year,
         month=frame[date_col].dt.month,
         dayofmonth=frame[date_col].dt.day,
         dayofyear=frame[date_col].dt.dayofyear,
@@ -81,7 +80,7 @@ def main(raw_features_file, output_file):
 
     # Save features to a CSV.
     feature_cols = (
-        ["year", "month", "dayofmonth", "dayofyear"]
+        ["month", "dayofmonth", "dayofyear"]
         + list(get_one_hot_precip(pipeline))
         # Remove the first four columns because they're transformed.
         + RAW_FEATURES[4:]
