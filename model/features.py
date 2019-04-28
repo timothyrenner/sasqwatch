@@ -1,10 +1,13 @@
 import click
 import pandas as pd
 import numpy as np
+
 from sklearn.compose import make_column_transformer
 from sklearn.preprocessing import OneHotEncoder, FunctionTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import make_pipeline
+from sklearn.base import BaseEstimator, TransformerMixin
+from h3 import h3
 
 from assemble import RAW_FEATURES, TARGET
 
@@ -18,22 +21,46 @@ def featurize_time(frame, date_col="date"):
     ).drop(columns=[date_col])
 
 
-def featurize_geography(
-    frame, latitude_col="latitude", longitude_col="longitude"
-):
-    # Obviously we'll do a little more with this later.
-    return frame.drop(columns=[latitude_col, longitude_col])
+class GeospatialDiscretizer(BaseEstimator, TransformerMixin):
+    def __init__(self, resolution):
+        self.resolution = resolution
+        self.hex_frame = pd.DataFrame()
+
+    def fit(self, X, y):
+        # X is a Nx2 lat/lon data frame.
+        # y is boolean numpy array.
+        self.hex_frame = (
+            pd.DataFrame(
+                {
+                    "latitude": X[y]["latitude"],
+                    "longitude": X[y]["longitude"],
+                    "h3": np.apply_along_axis(
+                        lambda x: h3.geo_to_h3(x[0], x[1], self.resolution),
+                        axis=1,
+                        arr=X[y],
+                    ),
+                }
+            )
+            .groupby("h3")
+            .agg({"h3": "count"})
+        )
+        return self
+
+    def transform(self, X):
+        h3_X = np.apply_along_axis(
+            lambda x: h3.geo_to_h3(x[0], x[1], self.resolution), axis=1, arr=X
+        )
+
+        return self.hex_frame.reindex(h3_X, fill_value=0)
 
 
 def feature_pipeline():
     column_transformer = make_column_transformer(
         # Featurize the dates and drop the date column.
         (FunctionTransformer(featurize_time, validate=False), ["date"]),
-        # Featurize the geography and drop the latitude / longitude columns.
-        (
-            FunctionTransformer(featurize_geography, validate=False),
-            ["latitude", "longitude"],
-        ),
+        # Featurize the geography.
+        (GeospatialDiscretizer(resolution=2), ["latitude", "longitude"]),
+        (GeospatialDiscretizer(resolution=3), ["latitude", "longitude"]),
         # One-hot the precip_type.
         (
             make_pipeline(
@@ -76,11 +103,14 @@ def main(raw_features_file, output_file):
 
     pipeline = feature_pipeline()
 
-    features = pipeline.fit_transform(raw_features[RAW_FEATURES])
+    features = pipeline.fit_transform(
+        raw_features[RAW_FEATURES], raw_features[TARGET].values
+    )
 
     # Save features to a CSV.
     feature_cols = (
         ["month", "dayofmonth", "dayofyear"]
+        + ["sighting_h3_r2", "sighting_h3_r3"]
         + list(get_one_hot_precip(pipeline))
         # Remove the first four columns because they're transformed.
         + RAW_FEATURES[4:]

@@ -65,6 +65,7 @@ def log_performance(model, test_x, test_y):
 def log_feature_importances(model, importance_plot_file):
     final_features = (
         ["month", "dayofmonth", "dayofyear"]
+        + ["sighting_h3_r2", "sighting_h3_r3"]
         + list(get_one_hot_precip(model.steps[0][1]))
         + RAW_FEATURES[4:]
     )
@@ -73,15 +74,19 @@ def log_feature_importances(model, importance_plot_file):
         model.steps[-1][1].get_booster().get_score(importance_type="gain")
     )
 
-    feature_importances = pd.DataFrame(
-        [
-            {
-                "feature": feature,
-                "importance": get(coded_feature, importances, 0.0),
-            }
-            for coded_feature, feature in features.items()
-        ]
-    ).sort_values("importance", ascending=True).reset_index(drop=True)
+    feature_importances = (
+        pd.DataFrame(
+            [
+                {
+                    "feature": feature,
+                    "importance": get(coded_feature, importances, 0.0),
+                }
+                for coded_feature, feature in features.items()
+            ]
+        )
+        .sort_values("importance", ascending=True)
+        .reset_index(drop=True)
+    )
 
     ax = feature_importances.plot(y="importance", x="feature", kind="barh")
     ax.get_figure().subplots_adjust(left=0.25)
@@ -103,7 +108,7 @@ def log_feature_importances(model, importance_plot_file):
     type=str,
     default="data/visualizations/feature_importances.png",
 )
-@click.option("--max-depth", type=int, default=3)
+@click.option("--max-depth", type=int, default=5)
 @click.option("--learning-rate", type=float, default=0.15)
 @click.option("--n-estimators", type=int, default=500)
 def main(
