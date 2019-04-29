@@ -20,18 +20,20 @@ from yaspin import yaspin
 from toolz import get
 
 from assemble import RAW_FEATURES, TARGET
-from features import feature_pipeline, get_one_hot_precip
+from features import feature_pipeline, get_features
 
 
-def log_params(max_depth, learning_rate, n_estimators):
+def log_params(max_depth, learning_rate, n_estimators, resolution):
     logger.info(f"Max depth: {max_depth}.")
     logger.info(f"Learning rate: {learning_rate}.")
     logger.info(f"Num estimators: {n_estimators}.")
+    logger.info(f"Resolution: {resolution}.")
     mlflow.log_params(
         {
             "max_depth": str(max_depth),
             "learning_rate": str(learning_rate),
             "n_estimators": str(n_estimators),
+            "resolution": str(resolution),
         }
     )
 
@@ -63,12 +65,7 @@ def log_performance(model, test_x, test_y):
 
 
 def log_feature_importances(model, importance_plot_file):
-    final_features = (
-        ["month", "dayofmonth", "dayofyear"]
-        + ["sighting_h3_r2", "sighting_h3_r3"]
-        + list(get_one_hot_precip(model.steps[0][1]))
-        + RAW_FEATURES[4:]
-    )
+    final_features = get_features(model.steps[0][1])
     features = {f"f{ii}": feature for ii, feature in enumerate(final_features)}
     importances = (
         model.steps[-1][1].get_booster().get_score(importance_type="gain")
@@ -111,6 +108,7 @@ def log_feature_importances(model, importance_plot_file):
 @click.option("--max-depth", type=int, default=5)
 @click.option("--learning-rate", type=float, default=0.15)
 @click.option("--n-estimators", type=int, default=500)
+@click.option("--resolution", "-r", type=int, default=3)
 def main(
     raw_training_data,
     model_file,
@@ -119,6 +117,7 @@ def main(
     max_depth,
     learning_rate,
     n_estimators,
+    resolution,
 ):
     training_data = pd.read_csv(raw_training_data)
 
@@ -129,11 +128,11 @@ def main(
 
     logger.info(f"Training set size: {train_x.shape[0]}.")
     logger.info(f"Test set size: {test_x.shape[0]}.")
-    log_params(max_depth, learning_rate, n_estimators)
+    log_params(max_depth, learning_rate, n_estimators, resolution)
 
     # Make the pipeline.
     pipeline = make_pipeline(
-        feature_pipeline(),
+        feature_pipeline(resolution),
         XGBClassifier(
             max_depth=max_depth,
             learning_rate=learning_rate,

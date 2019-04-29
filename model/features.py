@@ -16,8 +16,8 @@ def featurize_time(frame, date_col="date"):
     frame.loc[:, date_col] = pd.to_datetime(frame[date_col])
     return frame.assign(
         month=frame[date_col].dt.month,
-        dayofmonth=frame[date_col].dt.day,
-        dayofyear=frame[date_col].dt.dayofyear,
+        # dayofmonth=frame[date_col].dt.day,
+        # dayofyear=frame[date_col].dt.dayofyear,
     ).drop(columns=[date_col])
 
 
@@ -54,17 +54,21 @@ class GeospatialDiscretizer(BaseEstimator, TransformerMixin):
         return self.hex_frame.reindex(h3_X, fill_value=0)
 
 
-def feature_pipeline():
+def feature_pipeline(resolution):
     column_transformer = make_column_transformer(
         # Featurize the dates and drop the date column.
         (FunctionTransformer(featurize_time, validate=False), ["date"]),
         # Featurize the geography.
-        (GeospatialDiscretizer(resolution=2), ["latitude", "longitude"]),
-        (GeospatialDiscretizer(resolution=3), ["latitude", "longitude"]),
+        (
+            GeospatialDiscretizer(resolution=resolution),
+            ["latitude", "longitude"],
+        ),
         # One-hot the precip_type.
         (
             make_pipeline(
-                SimpleImputer(strategy="constant", fill_value="unknown"),
+                SimpleImputer(
+                    strategy="constant", fill_value="no_precipitation"
+                ),
                 OneHotEncoder(),
             ),
             ["precip_type"],
@@ -89,6 +93,14 @@ def get_one_hot_precip(pipeline):
     )
 
 
+def get_features(pipeline):
+    return (
+        ["month", "nearby_sightings"]
+        + list(get_one_hot_precip(pipeline))
+        + RAW_FEATURES[4:]
+    )
+
+
 @click.command()
 @click.argument("raw_features_file", type=click.File("r"))
 @click.option(
@@ -96,30 +108,23 @@ def get_one_hot_precip(pipeline):
     type=click.File("w"),
     default="data/processed/training_data.csv",
 )
-def main(raw_features_file, output_file):
+@click.option("--resolution", "-r", type=int, default=3)
+def main(raw_features_file, output_file, resolution):
     raw_features = pd.read_csv(raw_features_file).assign(
         date=lambda x: pd.to_datetime(x.date)
     )
 
-    pipeline = feature_pipeline()
+    pipeline = feature_pipeline(resolution)
 
     features = pipeline.fit_transform(
         raw_features[RAW_FEATURES], raw_features[TARGET].values
     )
 
     # Save features to a CSV.
-    feature_cols = (
-        ["month", "dayofmonth", "dayofyear"]
-        + ["sighting_h3_r2", "sighting_h3_r3"]
-        + list(get_one_hot_precip(pipeline))
-        # Remove the first four columns because they're transformed.
-        + RAW_FEATURES[4:]
-        + [TARGET]
-    )
 
     feature_frame = pd.DataFrame(
         np.concatenate([features, raw_features[[TARGET]].values], axis=1),
-        columns=feature_cols,
+        columns=get_features(pipeline),
     )
 
     feature_frame.to_csv(output_file, index=False)
