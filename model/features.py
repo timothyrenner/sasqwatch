@@ -121,7 +121,6 @@ def main(raw_features_file, output_file, resolution):
     )
 
     # Save features to a CSV.
-
     feature_frame = pd.DataFrame(
         np.concatenate([features, raw_features[[TARGET]].values], axis=1),
         columns=get_features(pipeline),
