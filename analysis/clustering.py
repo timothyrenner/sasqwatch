@@ -20,14 +20,23 @@ CURRENT_DIR = os.getcwd()
 @click.option("--min-cluster-size", type=int, default=5)
 @click.option("--min-samples", type=int, default=None)
 @click.option("--alpha", type=float, default=1.0)
+@click.option("--method", type=click.Choice(["eom", "leaf"]), default="eom")
 @click.option(
     "--output-file",
     type=str,
     default="data/visualizations/sighting_cluster_map.html",
 )
-def main(sightings_file, min_cluster_size, min_samples, alpha, output_file):
+def main(
+    sightings_file, min_cluster_size, min_samples, alpha, method, output_file
+):
     sightings = pd.read_csv(sightings_file).query("~latitude.isnull()")
-    clusterer = hdbscan.HDBSCAN(metric="haversine")
+    clusterer = hdbscan.HDBSCAN(
+        min_cluster_size=min_cluster_size,
+        min_samples=min_samples,
+        alpha=alpha,
+        metric="haversine",
+        cluster_selection_method=method,
+    )
     logger.info("Performing clustering.")
     start = time()
     with yaspin(text="👣 Building clusters 👣", color="cyan"):
