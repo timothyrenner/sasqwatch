@@ -39,3 +39,11 @@ HISTOGRAM sightings
 HISTOGRAM not_sightings
     TITLE "Random Sample Visibility"
     X visibility LABEL "Visibility (miles)"
+
+HISTOGRAM sightings
+    TITLE "Sighting Wind Speed"
+    X wind_speed LABEL "Wind Speed (mph)"
+
+HISTOGRAM not_sightings
+    TITLE "Random Sample Wind Speed"
+    X wind_speed LABEL "Wind Speed (mph)"
