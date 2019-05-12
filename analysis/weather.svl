@@ -1,0 +1,13 @@
+DATASETS
+    sightings SQL
+        "SELECT * FROM bigfoot WHERE sighting = 1"
+    not_sightings SQL
+        "SELECT * FROM bigfoot WHERE sighting = 0"
+
+HISTOGRAM sightings
+    TITLE "Sightings High Temperature"
+    X temperature_high LABEL "High Temperature (F)"
+
+HISTOGRAM not_sightings
+    TITLE "Random Sample High Temperature"
+    X temperature_high LABEL "High Temperature (F)"
