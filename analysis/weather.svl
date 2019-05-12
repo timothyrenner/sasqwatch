@@ -11,3 +11,11 @@ HISTOGRAM sightings
 HISTOGRAM not_sightings
     TITLE "Random Sample High Temperature"
     X temperature_high LABEL "High Temperature (F)"
+
+HISTOGRAM sightings
+    TITLE "Sighting Dew Point"
+    X dew_point LABEL "Dew Point (F)"
+
+HISTOGRAM not_sightings
+    TITLE "Random Sample Dew Point"
+    X dew_point LABEL "Dew Point (F)"
