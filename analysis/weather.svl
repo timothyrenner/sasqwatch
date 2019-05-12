@@ -31,3 +31,11 @@ BAR not_sightings
     X TRANSFORM "CASE WHEN precip_type IS NULL THEN 'none' ELSE precip_type END"
         LABEL "Precipitation Type"
     Y date COUNT LABEL "Number of Samples"
+
+HISTOGRAM sightings
+    TITLE "Sighting Visibility"
+    X visibility LABEL "Visibility (miles)"
+
+HISTOGRAM not_sightings
+    TITLE "Random Sample Visibility"
+    X visibility LABEL "Visibility (miles)"
