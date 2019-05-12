@@ -19,3 +19,15 @@ HISTOGRAM sightings
 HISTOGRAM not_sightings
     TITLE "Random Sample Dew Point"
     X dew_point LABEL "Dew Point (F)"
+
+BAR sightings
+    TITLE "Sighting Precipitation"
+    X TRANSFORM "CASE WHEN precip_type IS NULL THEN 'none' ELSE precip_type END"
+        LABEL "Precipitation Type"
+    Y date COUNT LABEL "Number of Sightings"
+
+BAR not_sightings
+    TITLE "Random Sample Precipitation"
+    X TRANSFORM "CASE WHEN precip_type IS NULL THEN 'none' ELSE precip_type END"
+        LABEL "Precipitation Type"
+    Y date COUNT LABEL "Number of Samples"
