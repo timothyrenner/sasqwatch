@@ -120,7 +120,6 @@ def main(us_hexagons, model_file, debug, output_file):
         squatchcast_frame.loc[:, "squatchcast"] = model.predict_proba(
             squatchcast_frame[RAW_FEATURES]
         )[:, 1]
-    # TODO: Build the map.
     # Get the resoluton the US hexagon file is at and index the squatchcast
     # results by that resolution.
     us_resolution = h3.h3_get_resolution(
@@ -139,7 +138,10 @@ def main(us_hexagons, model_file, debug, output_file):
     for date, frame in squatchcast_frame.groupby("date"):
         visualization_frames.append(
             pd.merge(
-                squatchcast_locations, frame, on="hex_address", how="left"
+                squatchcast_locations.drop(columns=["latitude", "longitude"]),
+                frame,
+                on="hex_address",
+                how="left",
             )
         )
 
