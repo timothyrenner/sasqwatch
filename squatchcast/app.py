@@ -51,8 +51,23 @@ def squatchcast_map(squatchcast_data):
                     "lat": squatchcast_data.latitude.mean(),
                     "lon": squatchcast_data.longitude.mean(),
                 },
-                "zoom": 4,
+                "zoom": 3,
             }
+        },
+    }
+
+
+def squatchcast_score_distribution(squatchcast_data, date):
+    """ Builds the histogram for the squatchast scores.
+    """
+    return {
+        "data": [
+            {"type": "histogram", "x": squatchcast_data.squatchcast.tolist()}
+        ],
+        "layout": {
+            "title": f"Squatchcast Scores: {date}",
+            "xaxis": {"title": "Squatchcast Score"},
+            "bargap": 0.05,
         },
     }
 
@@ -83,11 +98,6 @@ date_marks = {
     for ii, d in dates.items()
 }
 
-# DEBUG
-print(dates)
-print(date_marks)
-# END DEBUG.
-
 ###############################################################################
 # LAYOUT
 ###############################################################################
@@ -98,7 +108,7 @@ app.layout = html.Div(
             "SquatchCast",
             style={
                 "textAlign": "center",
-                "gridColumn": "2/3",
+                "gridColumn": "3/4",
                 "gridRow": "1/2",
             },
         ),
@@ -115,20 +125,24 @@ app.layout = html.Div(
             ],
             style={
                 "gridRow": "2/3",
-                "gridColumn": "1/4",
+                "gridColumn": "1/6",
                 "padding-left": "25px",
                 "padding-right": "25px",
             },
         ),
         dcc.Graph(
             id="squatchcast-map",
-            style={"gridRow": "3/11", "gridColumn": "1/3"},
+            style={"gridRow": "3/11", "gridColumn": "1/5"},
+        ),
+        dcc.Graph(
+            id="squatchcast-hist",
+            style={"gridRow": "11/15", "gridColumn": "1/3"},
         ),
     ],
     style={
         "display": "grid",
-        "gridTemplateRows": "repeat(10, minmax(100px, 1fr))",
-        "gridTemplateColumns": "repeat(3, minmax(250px, 1fr))",
+        "gridTemplateRows": "repeat(15, minmax(100px, 1fr))",
+        "gridTemplateColumns": "repeat(5, minmax(250px, 1fr))",
     },
 )
 
@@ -143,6 +157,16 @@ app.layout = html.Div(
 def update_map(day):
     date = dates[day]  # noqa
     return squatchcast_map(data.query(f"date==@date"))
+
+
+@app.callback(
+    Output("squatchcast-hist", "figure"), [Input("day-slider", "value")]
+)
+def update_score_hist(day):
+    date = dates[day]  # noqa
+    return squatchcast_score_distribution(
+        data.query("date==@date"), date_marks[day]
+    )
 
 
 if __name__ == "__main__":
