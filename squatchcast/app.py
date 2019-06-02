@@ -2,6 +2,7 @@ import dash
 import dash_html_components as html
 import dash_core_components as dcc
 import pandas as pd
+import numpy as np
 import os
 import json
 
@@ -150,6 +151,9 @@ data = pd.read_csv("squatchcast.csv").assign(
     ),
     text=lambda frame: frame.squatchcast.apply(
         lambda x: f"Squatchcast: {x:.3f}"
+    ),
+    precip_type=lambda frame: np.where(
+        frame.precip_probability < 0.4, "no_precipitation", frame.precip_type
     ),
 )
 
