@@ -37,11 +37,16 @@ def make_layers(data):
     return layers
 
 
-def squatchcast_map(squatchcast_data, layers):
+def squatchcast_map(squatchcast_data, layers, zoom=4, center=None):
     """ Builds the data structure required for a map of the squatchcast.
     """
     # TODO: This resets the zoom level and center of the map.
     # TODO: Let's not do that.
+    if center is None:
+        center = [
+            squatchcast_data.latitude.mean(),
+            squatchcast_data.longitude.mean(),
+        ]
     return {
         "data": [
             {
@@ -69,13 +74,11 @@ def squatchcast_map(squatchcast_data, layers):
             "mapbox": {
                 "accesstoken": os.getenv("MAPBOX_KEY"),
                 "layers": layers,
-                "center": {
-                    "lat": squatchcast_data.latitude.mean(),
-                    "lon": squatchcast_data.longitude.mean(),
-                },
-                "zoom": 3,
+                "center": {"lat": center[0], "lon": center[1]},
+                "zoom": zoom,
                 "style": "mapbox://styles/mapbox/light-v9",
-            }
+            },
+            "margin": {"l": 0, "r": 0, "b": 0, "t": 0},
         },
     }
 
