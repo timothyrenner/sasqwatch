@@ -23,6 +23,10 @@ from assemble import RAW_FEATURES  # noqa
 
 DARK_SKY_KEY = os.getenv("DARK_SKY_KEY")
 
+if not DARK_SKY_KEY:
+    logger.error("No Dark Sky key was found. Double check .env file.")
+    sys.exit(1)
+
 
 def create_weather_request(lat, lon, key):
     return (
@@ -35,14 +39,29 @@ def create_weather_request(lat, lon, key):
 @click.option(
     "--us-hexagons", type=click.File("r"), default="data/raw/us_hexagons.csv"
 )
+@click.option(
+    "--historical-sightings",
+    type=click.File("r"),
+    default="data/raw/bigfoot_sightings.csv",
+)
 @click.option("--model-file", type=str, default="model/model.pkl")
 @click.option("--debug", is_flag=True, default=False)
 @click.option("--output-file", type=click.File("w"), default="squatchcast.csv")
-def main(us_hexagons, model_file, debug, output_file):
+def main(us_hexagons, historical_sightings, model_file, debug, output_file):
 
     logger.info(f"Reading hexagons from {us_hexagons.name}.")
     squatchcast_locations = pd.read_csv(us_hexagons)
     logger.info(f"Read {squatchcast_locations.shape[0]} hexagons.")
+
+    logger.info(
+        f"Reading historical sightings from {historical_sightings.name}."
+    )
+    historical_sightings_frame = pd.read_csv(historical_sightings).query(
+        "~latitude.isnull()"
+    )
+    logger.info(
+        f"Read {historical_sightings_frame.shape[0]} historical_sightings."
+    )
 
     if debug:
         logger.warning("Debug selected, pulling top five records.")
@@ -69,8 +88,11 @@ def main(us_hexagons, model_file, debug, output_file):
             row.latitude, row.longitude, DARK_SKY_KEY
         )
         try:
-            weather = session.get(request).json()
-            weather_conditions.append(weather)
+            weather_response = session.get(request)
+            # Make sure the response worked.
+            weather_response.raise_for_status()
+            # Now parse the json.
+            weather_conditions.append(weather_response.json())
         except requests.HTTPError:
             failed += 1
     logger.info(f"{failed} requests to Dark Sky failed.")
@@ -93,7 +115,9 @@ def main(us_hexagons, model_file, debug, output_file):
                     ).strftime("%Y-%m-%d"),
                     "latitude": latitude,
                     "longitude": longitude,
-                    "precip_type": get_condition("precipType"),
+                    "precip_type": get(
+                        "precipType", conditions, "no_precipitation"
+                    ),
                     "temperature_high": get_condition("temperatureHigh"),
                     "temperature_low": get_condition("temperatureLow"),
                     "dew_point": get_condition("dewPoint"),
@@ -132,17 +156,40 @@ def main(us_hexagons, model_file, debug, output_file):
         arr=squatchcast_frame[["latitude", "longitude"]].values,
     )
 
+    historical_sightings_frame.loc[:, "hex_address"] = np.apply_along_axis(
+        lambda x: h3.geo_to_h3(x[0], x[1], us_resolution),
+        axis=1,
+        arr=historical_sightings_frame[["latitude", "longitude"]].values,
+    )
+
+    historical_sightings_agg = (
+        historical_sightings_frame.groupby("hex_address")
+        .agg({"number": "count"})
+        .reset_index()
+    )
+
     # Now we need, for each day, a complete hexagonification of the US. We'll
     # do this in a groupby and concatenate.
     visualization_frames = []
     for date, frame in squatchcast_frame.groupby("date"):
+        # Merge weather and US hexagons.
+        weather_location_merge = pd.merge(
+            squatchcast_locations.drop(columns=["latitude", "longitude"]),
+            frame,
+            on="hex_address",
+            how="left",
+        )
+        # Merge historical sightings.
         visualization_frames.append(
             pd.merge(
-                squatchcast_locations.drop(columns=["latitude", "longitude"]),
-                frame,
+                weather_location_merge,
+                historical_sightings_agg,
                 on="hex_address",
                 how="left",
             )
+            .fillna(0)
+            .astype({"number": "int"})
+            .rename(columns={"number": "historical_sightings"})
         )
 
     pd.concat(visualization_frames).to_csv(output_file, index=False)

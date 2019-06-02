@@ -7,7 +7,7 @@ import json
 
 from dotenv import load_dotenv, find_dotenv
 from palettable.colorbrewer.sequential import YlOrRd_9 as colors
-from math import ceil
+from math import floor
 from datetime import datetime
 from dash.dependencies import Input, Output
 from toolz import get_in
@@ -15,18 +15,28 @@ from toolz import get_in
 load_dotenv(find_dotenv())
 
 
-def make_layer(json_edge, color):
-    return {
-        "sourcetype": "geojson",
-        "source": {"type": "Polygon", "coordinates": [json.loads(json_edge)]},
-        "color": color,
-        "below": "water",
-        "opacity": 0.75,
-        "type": "fill",
-    }
+def make_layers(data):
+    layers = []
+    # We want one layer per color group.
+    for color, group in data.groupby("color"):
+        # Each layer is a multipolygon of all hexagons with the same color.
+        geojson = {"type": "MultiPolygon", "coordinates": []}
+        for _, row in group.iterrows():
+            geojson["coordinates"].append([json.loads(row.hex_geojson)])
+        layers.append(
+            {
+                "sourcetype": "geojson",
+                "source": geojson,
+                "color": color,
+                "below": "water",
+                "opacity": 0.5,
+                "type": "fill",
+            }
+        )
+    return layers
 
 
-def squatchcast_map(squatchcast_data):
+def squatchcast_map(squatchcast_data, layers):
     """ Builds the data structure required for a map of the squatchcast.
     """
     # TODO: This resets the zoom level and center of the map.
@@ -45,19 +55,25 @@ def squatchcast_map(squatchcast_data):
                 },
                 "hoverinfo": "text",
                 "customdata": squatchcast_data[
-                    ["temperature_high", "squatchcast", "precip_type"]
+                    [
+                        "temperature_high",
+                        "squatchcast",
+                        "precip_type",
+                        "historical_sightings",
+                    ]
                 ].to_dict(orient="records"),
             }
         ],
         "layout": {
             "mapbox": {
                 "accesstoken": os.getenv("MAPBOX_KEY"),
-                "layers": squatchcast_data.layer.tolist(),
+                "layers": layers,
                 "center": {
                     "lat": squatchcast_data.latitude.mean(),
                     "lon": squatchcast_data.longitude.mean(),
                 },
                 "zoom": 3,
+                "style": "mapbox://styles/mapbox/light-v9",
             }
         },
     }
@@ -128,10 +144,9 @@ app.title = "SquatchCast"
 
 data = pd.read_csv("squatchcast.csv").assign(
     color=lambda frame: frame.squatchcast.apply(
-        lambda x: colors.hex_colors[(ceil(x * 10) - 1) if x > 0 else 0]
-    ),
-    layer=lambda frame: frame.apply(
-        lambda x: make_layer(x.hex_geojson, x.color), axis=1
+        lambda x: colors.hex_colors[
+            (floor(x * 10) - 1) if floor(x * 10) > 0 else 0
+        ]
     ),
     text=lambda frame: frame.squatchcast.apply(
         lambda x: f"Squatchcast: {x:.3f}"
@@ -142,6 +157,9 @@ dates = {ii: d for ii, d in enumerate(sorted(data.date.unique()))}
 date_marks = {
     ii: datetime.strptime(d, "%Y-%m-%d").strftime("%m/%d")
     for ii, d in dates.items()
+}
+layers = {
+    ii: make_layers(data.query(f"date=='{dates[ii]}'")) for ii in dates.keys()
 }
 
 ###############################################################################
@@ -179,17 +197,22 @@ app.layout = html.Div(
         dcc.Graph(
             id="squatchcast-map",
             style={"gridRow": "3/11", "gridColumn": "1/5"},
+            config={"displayModeBar": False},
         ),
         dcc.Graph(
             id="squatchcast-hist",
             style={"gridRow": "11/15", "gridColumn": "1/3"},
+            config={"displayModeBar": False},
         ),
         dcc.Graph(
             id="temperature-hist",
             style={"gridRow": "11/15", "gridColumn": "3/5"},
+            config={"displayModeBar": False},
         ),
         dcc.Graph(
-            id="precip-bar", style={"gridRow": "11/15", "gridColumn": "5/6"}
+            id="precip-bar",
+            style={"gridRow": "11/15", "gridColumn": "5/6"},
+            config={"displayModeBar": False},
         ),
         html.Div(
             children=[
@@ -238,7 +261,7 @@ app.layout = html.Div(
 )
 def update_map(day):
     date = dates[day]  # noqa
-    return squatchcast_map(data.query(f"date==@date"))
+    return squatchcast_map(data.query(f"date==@date"), layers[day])
 
 
 @app.callback(
@@ -278,9 +301,25 @@ def update_high_temperature(map_hover_data):
         precipitation = get_in(
             ["points", 0, "customdata", "precip_type"], map_hover_data, ""
         )
-        if not precipitation:
+        if (not precipitation) or (precipitation == "no_precipitation"):
             precipitation = "clear"
         return f"{int(high_temp)}\xb0F, {precipitation}"
+    else:
+        return "\n"
+
+
+@app.callback(
+    Output("historical-sightings", "children"),
+    [Input("squatchcast-map", "hoverData")],
+)
+def update_historical_sightings(map_hover_data):
+    if map_hover_data:
+        historical_sightings = get_in(
+            ["points", 0, "customdata", "historical_sightings"],
+            map_hover_data,
+            "",
+        )
+        return historical_sightings
     else:
         return "\n"
 
