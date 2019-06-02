@@ -1,7 +1,7 @@
 # External data source reference:
 # https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.2016.html
 
-US_RESOLUTION ?= 4
+US_RESOLUTION ?= 3
 SYNTHESIZED_RESOLUTION ?= 11
 MIN_SYNTHESIZED_DATE ?= "1990-01-01"
 NUM_SYNTHESIZED_SAMPLES ?= 4000
